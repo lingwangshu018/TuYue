@@ -40,14 +40,24 @@ class BookmarkStore(
                     add(
                         Bookmark(
                             name =
-                                item.getString(
-                                    "name"
+                                item.optString(
+                                    "name",
+                                    "网页"
                                 ),
 
                             url =
-                                item.getString(
-                                    "url"
-                                )
+                                item.optString(
+                                    "url",
+                                    ""
+                                ),
+
+                            iconUrl =
+                                item.optString(
+                                    "iconUrl",
+                                    ""
+                                ).takeIf {
+                                    it.isNotBlank()
+                                }
                         )
                     )
                 }
@@ -74,7 +84,6 @@ class BookmarkStore(
                 it.url == bookmark.url
             }
         ) {
-
             return
         }
 
@@ -92,8 +101,7 @@ class BookmarkStore(
         val bookmarks =
             getAll()
                 .filterNot {
-                    it.url ==
-                        bookmark.url
+                    it.url == bookmark.url
                 }
 
         save(bookmarks)
@@ -120,6 +128,11 @@ class BookmarkStore(
                     put(
                         "url",
                         bookmark.url
+                    )
+
+                    put(
+                        "iconUrl",
+                        bookmark.iconUrl ?: ""
                     )
                 }
             )
