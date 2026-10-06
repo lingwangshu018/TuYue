@@ -47,4 +47,21 @@ class AppSettings(
                 )
                 .apply()
         }
+        var desktopMode: Boolean
+    get() {
+        return preferences.getBoolean(
+            "desktop_mode",
+            false
+        )
+    }
+
+    set(value) {
+        preferences
+            .edit()
+            .putBoolean(
+                "desktop_mode",
+                value
+            )
+            .apply()
+    }
 }
