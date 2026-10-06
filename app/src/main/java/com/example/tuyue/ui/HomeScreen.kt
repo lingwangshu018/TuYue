@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.tuyue.data.Bookmark
@@ -60,14 +62,20 @@ fun HomeScreen(
 
         Text(
             text = "兔跃",
+
             style =
-                MaterialTheme.typography.headlineLarge
+                MaterialTheme
+                    .typography
+                    .headlineLarge
         )
 
         Text(
             text = "网页，从这里出发",
+
             style =
-                MaterialTheme.typography.bodyLarge
+                MaterialTheme
+                    .typography
+                    .bodyLarge
         )
 
         Card(
@@ -84,9 +92,13 @@ fun HomeScreen(
             ) {
 
                 Text(
-                    text = "快速打开 / 添加网页",
+                    text =
+                        "快速打开 / 添加网页",
+
                     style =
-                        MaterialTheme.typography.titleLarge
+                        MaterialTheme
+                            .typography
+                            .titleLarge
                 )
 
                 OutlinedTextField(
@@ -103,7 +115,9 @@ fun HomeScreen(
                     singleLine = true,
 
                     label = {
-                        Text("搜索或输入网址")
+                        Text(
+                            "搜索或输入网址"
+                        )
                     }
                 )
 
@@ -127,7 +141,9 @@ fun HomeScreen(
                                     searchEngine
                                 )
 
-                            if (url == null) {
+                            if (
+                                url == null
+                            ) {
 
                                 message =
                                     "请输入网址，或者开启搜索"
@@ -154,7 +170,9 @@ fun HomeScreen(
                                     searchEngine
                                 )
 
-                            if (url == null) {
+                            if (
+                                url == null
+                            ) {
 
                                 message =
                                     "无法识别这个地址"
@@ -164,11 +182,13 @@ fun HomeScreen(
 
                             val host =
                                 runCatching {
+
                                     Uri.parse(url)
                                         .host
                                         ?.removePrefix(
                                             "www."
                                         )
+
                                 }.getOrNull()
 
                             val name =
@@ -195,23 +215,39 @@ fun HomeScreen(
                         }
                     ) {
 
-                        Text("添加到首页")
+                        Text("快速添加")
                     }
                 }
 
                 Text(
                     text =
-                        "当前搜索：${searchEngine.displayName}",
+                        "需要自动识别标题和网站图标时，请使用底部“添加”页面。",
+
                     style =
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme
+                            .typography
+                            .bodySmall
+                )
+
+                Text(
+                    text =
+                        "当前搜索：${searchEngine.displayName}",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall
                 )
 
                 message?.let {
 
                     Text(
                         text = it,
+
                         style =
-                            MaterialTheme.typography.bodySmall
+                            MaterialTheme
+                                .typography
+                                .bodySmall
                     )
                 }
             }
@@ -222,13 +258,19 @@ fun HomeScreen(
                 Modifier.fillMaxWidth(),
 
             horizontalArrangement =
-                Arrangement.SpaceBetween
+                Arrangement.SpaceBetween,
+
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Text(
                 text = "我的网页",
+
                 style =
-                    MaterialTheme.typography.titleLarge
+                    MaterialTheme
+                        .typography
+                        .titleLarge
             )
 
             Text(
@@ -252,9 +294,13 @@ fun HomeScreen(
                 ) {
 
                     Text(
-                        text = "还没有保存网页",
+                        text =
+                            "还没有保存网页",
+
                         style =
-                            MaterialTheme.typography.titleMedium
+                            MaterialTheme
+                                .typography
+                                .titleMedium
                     )
 
                     Spacer(
@@ -264,7 +310,7 @@ fun HomeScreen(
 
                     Text(
                         text =
-                            "输入网址，然后点击“添加到首页”。"
+                            "可以使用底部“添加”，让兔跃自动识别网页名称和图标。"
                     )
                 }
             }
@@ -279,62 +325,86 @@ fun HomeScreen(
                         Modifier.fillMaxWidth()
                 ) {
 
-                    Column(
+                    Row(
                         modifier =
                             Modifier.padding(16.dp),
 
-                        verticalArrangement =
-                            Arrangement.spacedBy(6.dp)
+                        verticalAlignment =
+                            Alignment.CenterVertically,
+
+                        horizontalArrangement =
+                            Arrangement.spacedBy(14.dp)
                     ) {
 
-                        Text(
-                            text =
+                        WebsiteIcon(
+                            iconUrl =
+                                bookmark.iconUrl,
+
+                            name =
                                 bookmark.name,
 
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .titleMedium
+                            modifier =
+                                Modifier.size(52.dp)
                         )
 
-                        Text(
-                            text =
-                                bookmark.url,
+                        Column(
+                            modifier =
+                                Modifier.weight(1f),
 
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodySmall
-                        )
+                            verticalArrangement =
+                                Arrangement.spacedBy(4.dp)
+                        ) {
 
-                        Row {
+                            Text(
+                                text =
+                                    bookmark.name,
 
-                            TextButton(
-                                onClick = {
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .titleMedium
+                            )
 
-                                    onOpenUrl(
-                                        bookmark.url
-                                    )
+                            Text(
+                                text =
+                                    bookmark.url,
+
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodySmall
+                            )
+
+                            Row {
+
+                                TextButton(
+                                    onClick = {
+
+                                        onOpenUrl(
+                                            bookmark.url
+                                        )
+                                    }
+                                ) {
+
+                                    Text("打开")
                                 }
-                            ) {
 
-                                Text("打开")
-                            }
+                                TextButton(
+                                    onClick = {
 
-                            TextButton(
-                                onClick = {
-
-                                    bookmarkStore.delete(
-                                        bookmark
-                                    )
-
-                                    bookmarks =
                                         bookmarkStore
-                                            .getAll()
-                                }
-                            ) {
+                                            .delete(
+                                                bookmark
+                                            )
 
-                                Text("删除")
+                                        bookmarks =
+                                            bookmarkStore
+                                                .getAll()
+                                    }
+                                ) {
+
+                                    Text("删除")
+                                }
                             }
                         }
                     }
