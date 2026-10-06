@@ -32,7 +32,11 @@ private sealed class TuYuePage {
 }
 
 @Composable
-fun TuYueApp() {
+fun TuYueApp(
+    browserDisplayMode: BrowserDisplayMode,
+    onBrowserDisplayModeChanged:
+        (BrowserDisplayMode) -> Unit
+) {
 
     val context = LocalContext.current
 
@@ -65,10 +69,51 @@ fun TuYueApp() {
         page = TuYuePage.Settings
     }
 
+    /*
+     * 只有 Browser 页面允许保持全屏。
+     *
+     * 一旦离开 Browser，
+     * 自动恢复普通系统栏。
+     */
+    LaunchedEffect(page) {
+
+        if (page !is TuYuePage.Browser) {
+
+            onBrowserDisplayModeChanged(
+                BrowserDisplayMode.NORMAL
+            )
+        }
+    }
+
+    val isBrowser =
+        page is TuYuePage.Browser
+
+    val isBrowserFullscreen =
+        isBrowser &&
+        browserDisplayMode !=
+        BrowserDisplayMode.NORMAL
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
+            .then(
+                if (
+                    browserDisplayMode ==
+                    BrowserDisplayMode.IMMERSIVE &&
+                    isBrowser
+                ) {
+
+                    // 沉浸式全屏：
+                    // 不给状态栏留空间
+                    Modifier
+
+                } else {
+
+                    // 普通模式和普通全屏：
+                    // 给顶部状态栏留空间
+                    Modifier.statusBarsPadding()
+                }
+            )
     ) {
 
         Box(
@@ -82,7 +127,8 @@ fun TuYueApp() {
                 TuYuePage.Home -> {
 
                     HomeScreen(
-                        bookmarkStore = bookmarkStore,
+                        bookmarkStore =
+                            bookmarkStore,
 
                         searchEngine =
                             settings.searchEngine,
@@ -100,7 +146,8 @@ fun TuYueApp() {
                 TuYuePage.AddWebPage -> {
 
                     AddWebPageScreen(
-                        bookmarkStore = bookmarkStore,
+                        bookmarkStore =
+                            bookmarkStore,
 
                         searchEngine =
                             settings.searchEngine,
@@ -130,6 +177,16 @@ fun TuYueApp() {
                         initialDesktopMode =
                             settings.desktopMode,
 
+                        displayMode =
+                            browserDisplayMode,
+
+                        onDisplayModeChanged = {
+
+                            onBrowserDisplayModeChanged(
+                                it
+                            )
+                        },
+
                         onDesktopModeChanged = {
 
                             settings.desktopMode =
@@ -138,17 +195,29 @@ fun TuYueApp() {
 
                         onHome = {
 
+                            onBrowserDisplayModeChanged(
+                                BrowserDisplayMode.NORMAL
+                            )
+
                             page =
                                 TuYuePage.Home
                         },
 
                         onAddWebPage = {
 
+                            onBrowserDisplayModeChanged(
+                                BrowserDisplayMode.NORMAL
+                            )
+
                             page =
                                 TuYuePage.AddWebPage
                         },
 
                         onSettings = {
+
+                            onBrowserDisplayModeChanged(
+                                BrowserDisplayMode.NORMAL
+                            )
 
                             openSettings()
                         },
@@ -192,26 +261,50 @@ fun TuYueApp() {
             }
         }
 
-        CompactBottomBar(
-            currentPage = page,
+        /*
+         * 浏览器进入：
+         *
+         * 全屏
+         * 或
+         * 沉浸式全屏
+         *
+         * 都隐藏兔跃自己的底部导航栏。
+         */
+        if (!isBrowserFullscreen) {
 
-            onHome = {
+            CompactBottomBar(
+                currentPage = page,
 
-                page =
-                    TuYuePage.Home
-            },
+                onHome = {
 
-            onAdd = {
+                    onBrowserDisplayModeChanged(
+                        BrowserDisplayMode.NORMAL
+                    )
 
-                page =
-                    TuYuePage.AddWebPage
-            },
+                    page =
+                        TuYuePage.Home
+                },
 
-            onSettings = {
+                onAdd = {
 
-                openSettings()
-            }
-        )
+                    onBrowserDisplayModeChanged(
+                        BrowserDisplayMode.NORMAL
+                    )
+
+                    page =
+                        TuYuePage.AddWebPage
+                },
+
+                onSettings = {
+
+                    onBrowserDisplayModeChanged(
+                        BrowserDisplayMode.NORMAL
+                    )
+
+                    openSettings()
+                }
+            )
+        }
     }
 }
 
@@ -262,8 +355,11 @@ private fun CompactBottomBar(
                                 currentPage ==
                                 TuYuePage.Home
                             ) {
+
                                 FontWeight.Bold
+
                             } else {
+
                                 FontWeight.Normal
                             }
                     )
@@ -284,8 +380,11 @@ private fun CompactBottomBar(
                                 currentPage ==
                                 TuYuePage.AddWebPage
                             ) {
+
                                 FontWeight.Bold
+
                             } else {
+
                                 FontWeight.Normal
                             }
                     )
@@ -306,8 +405,11 @@ private fun CompactBottomBar(
                                 currentPage ==
                                 TuYuePage.Settings
                             ) {
+
                                 FontWeight.Bold
+
                             } else {
+
                                 FontWeight.Normal
                             }
                     )
