@@ -6,6 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.tuyue.data.AppSettings
+import com.example.tuyue.data.BookmarkStore
 import com.example.tuyue.ui.BrowserScreen
 import com.example.tuyue.ui.HomeScreen
 
@@ -21,6 +24,19 @@ private sealed class TuYuePage {
 @Composable
 fun TuYueApp() {
 
+    val context =
+        LocalContext.current
+
+    val settings =
+        remember {
+            AppSettings(context)
+        }
+
+    val bookmarkStore =
+        remember {
+            BookmarkStore(context)
+        }
+
     var page by remember {
         mutableStateOf<TuYuePage>(
             TuYuePage.Home
@@ -32,6 +48,9 @@ fun TuYueApp() {
         TuYuePage.Home -> {
 
             HomeScreen(
+                bookmarkStore = bookmarkStore,
+                searchEngine = settings.searchEngine,
+
                 onOpenUrl = { url ->
 
                     page =
@@ -43,14 +62,17 @@ fun TuYueApp() {
         is TuYuePage.Browser -> {
 
             BackHandler {
-                page = TuYuePage.Home
+                page =
+                    TuYuePage.Home
             }
 
             BrowserScreen(
-                initialUrl = currentPage.url,
+                initialUrl =
+                    currentPage.url,
 
                 onHome = {
-                    page = TuYuePage.Home
+                    page =
+                        TuYuePage.Home
                 }
             )
         }
