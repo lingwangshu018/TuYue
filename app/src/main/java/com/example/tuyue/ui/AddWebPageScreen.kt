@@ -1,16 +1,43 @@
 package com.example.tuyue.ui
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.example.tuyue.data.Bookmark
+import com.example.tuyue.data.BookmarkFolder
 import com.example.tuyue.data.BookmarkStore
 import com.example.tuyue.util.SearchEngine
 import com.example.tuyue.util.fetchWebsiteMetadata
@@ -37,26 +64,50 @@ fun AddWebPageScreen(
     }
 
     var iconUrl by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<String?>(
+            null
+        )
     }
 
     var detectedUrl by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<String?>(
+            null
+        )
     }
 
     var message by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf<String?>(
+            null
+        )
     }
 
     var isDetecting by remember {
         mutableStateOf(false)
     }
 
-    /*
-     * 用户停止输入一小会儿以后，
-     * 自动识别网页标题和 favicon。
-     */
-    LaunchedEffect(input) {
+    var folders by remember {
+        mutableStateOf(
+            bookmarkStore.getFolders()
+        )
+    }
+
+    var selectedFolderId by remember {
+        mutableStateOf<String?>(
+            null
+        )
+    }
+
+    var folderMenuExpanded by remember {
+        mutableStateOf(false)
+    }
+
+    var showNewFolderDialog by remember {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(
+        input
+    ) {
 
         detectedUrl = null
         iconUrl = null
@@ -69,7 +120,9 @@ fun AddWebPageScreen(
             return@LaunchedEffect
         }
 
-        delay(700)
+        delay(
+            700
+        )
 
         val url =
             resolveInput(
@@ -92,29 +145,41 @@ fun AddWebPageScreen(
                 url
             )
 
-        detectedUrl = url
-        iconUrl = metadata.iconUrl
+        detectedUrl =
+            url
+
+        iconUrl =
+            metadata.iconUrl
 
         if (
             name.isBlank()
         ) {
-            name = metadata.title
+
+            name =
+                metadata.title
         }
 
-        isDetecting = false
+        isDetecting =
+            false
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(
+                    20.dp
+                ),
 
         verticalArrangement =
-            Arrangement.spacedBy(16.dp)
+            Arrangement.spacedBy(
+                16.dp
+            )
     ) {
 
         Text(
             text = "添加网页",
+
             style =
                 MaterialTheme
                     .typography
@@ -122,7 +187,9 @@ fun AddWebPageScreen(
         )
 
         Text(
-            text = "输入网址，兔跃会自动识别网页名称和图标。",
+            text =
+                "把网页放到首页，或者整理进收藏夹。",
+
             style =
                 MaterialTheme
                     .typography
@@ -133,6 +200,7 @@ fun AddWebPageScreen(
             value = input,
 
             onValueChange = {
+
                 input = it
                 message = null
             },
@@ -145,7 +213,9 @@ fun AddWebPageScreen(
             },
 
             placeholder = {
-                Text("例如：bilibili.com")
+                Text(
+                    "例如：bilibili.com"
+                )
             },
 
             singleLine = true
@@ -160,22 +230,23 @@ fun AddWebPageScreen(
                     Alignment.CenterVertically,
 
                 horizontalArrangement =
-                    Arrangement.spacedBy(10.dp)
+                    Arrangement.spacedBy(
+                        10.dp
+                    )
             ) {
 
                 CircularProgressIndicator(
                     modifier =
-                        Modifier.size(20.dp),
+                        Modifier.size(
+                            20.dp
+                        ),
 
-                    strokeWidth = 2.dp
+                    strokeWidth =
+                        2.dp
                 )
 
                 Text(
-                    text = "正在识别网页信息…",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
+                    "正在识别网页信息…"
                 )
             }
         }
@@ -189,30 +260,44 @@ fun AddWebPageScreen(
                     Modifier.fillMaxWidth(),
 
                 shape =
-                    RoundedCornerShape(18.dp)
+                    RoundedCornerShape(
+                        18.dp
+                    )
             ) {
 
                 Row(
                     modifier =
-                        Modifier.padding(16.dp),
+                        Modifier.padding(
+                            16.dp
+                        ),
 
                     verticalAlignment =
                         Alignment.CenterVertically,
 
                     horizontalArrangement =
-                        Arrangement.spacedBy(14.dp)
+                        Arrangement.spacedBy(
+                            14.dp
+                        )
                 ) {
 
                     WebsiteIcon(
-                        iconUrl = iconUrl,
-                        name = name,
+                        iconUrl =
+                            iconUrl,
+
+                        name =
+                            name,
+
                         modifier =
-                            Modifier.size(52.dp)
+                            Modifier.size(
+                                52.dp
+                            )
                     )
 
                     Column(
                         modifier =
-                            Modifier.weight(1f)
+                            Modifier.weight(
+                                1f
+                            )
                     ) {
 
                         Text(
@@ -229,12 +314,15 @@ fun AddWebPageScreen(
 
                         Spacer(
                             modifier =
-                                Modifier.height(4.dp)
+                                Modifier.height(
+                                    4.dp
+                                )
                         )
 
                         Text(
                             text =
-                                detectedUrl ?: "",
+                                detectedUrl
+                                    ?: "",
 
                             style =
                                 MaterialTheme
@@ -260,14 +348,126 @@ fun AddWebPageScreen(
                 Text("网页名称")
             },
 
-            supportingText = {
-                Text(
-                    "自动识别后仍然可以自己修改"
-                )
-            },
-
             singleLine = true
         )
+
+        Text(
+            text = "保存位置",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .titleMedium
+        )
+
+        Box(
+            modifier =
+                Modifier.fillMaxWidth()
+        ) {
+
+            OutlinedButton(
+                onClick = {
+
+                    folderMenuExpanded =
+                        true
+                },
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                val selectedFolder =
+                    folders.firstOrNull {
+                        it.id ==
+                            selectedFolderId
+                    }
+
+                Text(
+                    text =
+                        if (
+                            selectedFolder ==
+                            null
+                        ) {
+
+                            "🏠 首页"
+
+                        } else {
+
+                            "📁 ${selectedFolder.name}"
+                        }
+                )
+            }
+
+            DropdownMenu(
+                expanded =
+                    folderMenuExpanded,
+
+                onDismissRequest = {
+
+                    folderMenuExpanded =
+                        false
+                }
+            ) {
+
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "🏠 首页"
+                        )
+                    },
+
+                    onClick = {
+
+                        selectedFolderId =
+                            null
+
+                        folderMenuExpanded =
+                            false
+                    }
+                )
+
+                folders.forEach {
+                    folder ->
+
+                    DropdownMenuItem(
+                        text = {
+
+                            Text(
+                                "📁 ${folder.name}"
+                            )
+                        },
+
+                        onClick = {
+
+                            selectedFolderId =
+                                folder.id
+
+                            folderMenuExpanded =
+                                false
+                        }
+                    )
+                }
+
+                HorizontalDivider()
+
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "＋ 新建收藏夹"
+                        )
+                    },
+
+                    onClick = {
+
+                        folderMenuExpanded =
+                            false
+
+                        showNewFolderDialog =
+                            true
+                    }
+                )
+            }
+        }
 
         OutlinedButton(
             onClick = {
@@ -288,7 +488,9 @@ fun AddWebPageScreen(
                     return@OutlinedButton
                 }
 
-                onOpenUrl(url)
+                onOpenUrl(
+                    url
+                )
             },
 
             modifier =
@@ -322,7 +524,9 @@ fun AddWebPageScreen(
                     name
                         .trim()
                         .ifBlank {
-                            input.trim()
+
+                            input
+                                .trim()
                                 .removePrefix(
                                     "https://"
                                 )
@@ -332,32 +536,39 @@ fun AddWebPageScreen(
                                 .removePrefix(
                                     "www."
                                 )
-                                .substringBefore("/")
+                                .substringBefore(
+                                    "/"
+                                )
                         }
 
                 bookmarkStore.add(
                     Bookmark(
-                        name = bookmarkName,
-                        url = url,
-                        iconUrl = iconUrl
+                        name =
+                            bookmarkName,
+
+                        url =
+                            url,
+
+                        iconUrl =
+                            iconUrl,
+
+                        folderId =
+                            selectedFolderId
                     )
                 )
-
-                message =
-                    "已添加到兔跃首页"
 
                 onSaved()
             },
 
             enabled =
                 input.isNotBlank() &&
-                !isDetecting,
+                    !isDetecting,
 
             modifier =
                 Modifier.fillMaxWidth()
         ) {
 
-            Text("添加到首页")
+            Text("添加")
         }
 
         message?.let {
@@ -368,7 +579,7 @@ fun AddWebPageScreen(
                 style =
                     MaterialTheme
                         .typography
-                        .bodyMedium
+                        .bodySmall
             )
         }
 
@@ -384,6 +595,117 @@ fun AddWebPageScreen(
                     .bodySmall
         )
     }
+
+    if (
+        showNewFolderDialog
+    ) {
+
+        NewFolderDialog(
+            onDismiss = {
+
+                showNewFolderDialog =
+                    false
+            },
+
+            onCreate = {
+                folderName ->
+
+                val folder =
+                    bookmarkStore
+                        .createFolder(
+                            folderName
+                        )
+
+                folders =
+                    bookmarkStore
+                        .getFolders()
+
+                selectedFolderId =
+                    folder.id
+
+                showNewFolderDialog =
+                    false
+            }
+        )
+    }
+}
+
+@Composable
+private fun NewFolderDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit
+) {
+
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    AlertDialog(
+        onDismissRequest =
+            onDismiss,
+
+        title = {
+            Text(
+                "新建收藏夹"
+            )
+        },
+
+        text = {
+
+            OutlinedTextField(
+                value = name,
+
+                onValueChange = {
+                    name = it
+                },
+
+                label = {
+                    Text(
+                        "收藏夹名称"
+                    )
+                },
+
+                placeholder = {
+                    Text(
+                        "例如：学习"
+                    )
+                },
+
+                singleLine = true
+            )
+        },
+
+        confirmButton = {
+
+            TextButton(
+                onClick = {
+
+                    if (
+                        name.isNotBlank()
+                    ) {
+
+                        onCreate(
+                            name.trim()
+                        )
+                    }
+                }
+            ) {
+
+                Text("创建")
+            }
+        },
+
+        dismissButton = {
+
+            TextButton(
+                onClick =
+                    onDismiss
+            ) {
+
+                Text("取消")
+            }
+        }
+    )
 }
 
 @Composable
@@ -396,7 +718,10 @@ fun WebsiteIcon(
     var bitmap by remember(
         iconUrl
     ) {
-        mutableStateOf<android.graphics.Bitmap?>(
+
+        mutableStateOf<
+            android.graphics.Bitmap?
+        >(
             null
         )
     }
@@ -410,6 +735,7 @@ fun WebsiteIcon(
         if (
             iconUrl.isNullOrBlank()
         ) {
+
             return@LaunchedEffect
         }
 
@@ -421,26 +747,32 @@ fun WebsiteIcon(
                 runCatching {
 
                     val connection =
-                        URL(iconUrl)
-                            .openConnection()
+                        URL(
+                            iconUrl
+                        ).openConnection()
 
-                    connection.connectTimeout =
+                    connection
+                        .connectTimeout =
                         6000
 
-                    connection.readTimeout =
+                    connection
+                        .readTimeout =
                         6000
 
-                    connection.setRequestProperty(
-                        "User-Agent",
-                        "Mozilla/5.0 Android"
-                    )
+                    connection
+                        .setRequestProperty(
+                            "User-Agent",
+                            "Mozilla/5.0 Android"
+                        )
 
                     connection
                         .getInputStream()
                         .use {
                             stream ->
 
-                            android.graphics.BitmapFactory
+                            android
+                                .graphics
+                                .BitmapFactory
                                 .decodeStream(
                                     stream
                                 )
@@ -451,12 +783,16 @@ fun WebsiteIcon(
     }
 
     Surface(
-        modifier = modifier,
+        modifier =
+            modifier,
 
         shape =
-            RoundedCornerShape(12.dp),
+            RoundedCornerShape(
+                14.dp
+            ),
 
-        tonalElevation = 2.dp
+        tonalElevation =
+            2.dp
     ) {
 
         Box(
