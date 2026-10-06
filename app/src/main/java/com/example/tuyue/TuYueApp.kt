@@ -38,23 +38,34 @@ fun TuYueApp(
         (BrowserDisplayMode) -> Unit
 ) {
 
-    val context = LocalContext.current
+    val context =
+        LocalContext.current
 
-    val settings = remember {
-        AppSettings(context)
-    }
+    val settings =
+        remember {
 
-    val bookmarkStore = remember {
-        BookmarkStore(context)
-    }
+            AppSettings(
+                context
+            )
+        }
+
+    val bookmarkStore =
+        remember {
+
+            BookmarkStore(
+                context
+            )
+        }
 
     var page by remember {
+
         mutableStateOf<TuYuePage>(
             TuYuePage.Home
         )
     }
 
     var previousPage by remember {
+
         mutableStateOf<TuYuePage>(
             TuYuePage.Home
         )
@@ -62,22 +73,33 @@ fun TuYueApp(
 
     val openSettings = {
 
-        if (page != TuYuePage.Settings) {
-            previousPage = page
+        if (
+            page !=
+            TuYuePage.Settings
+        ) {
+
+            previousPage =
+                page
         }
 
-        page = TuYuePage.Settings
+        page =
+            TuYuePage.Settings
     }
 
     /*
-     * 只有 Browser 页面允许保持全屏。
+     * 只有浏览器页面允许全屏。
      *
-     * 一旦离开 Browser，
+     * 离开浏览器以后，
      * 自动恢复普通系统栏。
      */
-    LaunchedEffect(page) {
+    LaunchedEffect(
+        page
+    ) {
 
-        if (page !is TuYuePage.Browser) {
+        if (
+            page !is
+            TuYuePage.Browser
+        ) {
 
             onBrowserDisplayModeChanged(
                 BrowserDisplayMode.NORMAL
@@ -86,44 +108,84 @@ fun TuYueApp(
     }
 
     val isBrowser =
-        page is TuYuePage.Browser
+        page is
+        TuYuePage.Browser
 
-    val isBrowserFullscreen =
+    val isFullscreen =
         isBrowser &&
         browserDisplayMode !=
         BrowserDisplayMode.NORMAL
 
+    /*
+     * ---------------------------
+     * 最外层布局
+     * ---------------------------
+     *
+     * NORMAL：
+     * 给顶部状态栏留安全区域。
+     *
+     * FULLSCREEN：
+     * 状态栏仍显示，所以顶部仍然留区域；
+     * 但是底部完全不留 navigation bar inset。
+     *
+     * IMMERSIVE：
+     * 上下都不留系统栏区域。
+     *
+     * 注意：
+     * 这里故意没有给整个 Column 使用
+     * navigationBarsPadding()。
+     *
+     * 底部安全区域只由普通模式下的
+     * CompactBottomBar 自己处理。
+     */
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(
-                if (
-                    browserDisplayMode ==
-                    BrowserDisplayMode.IMMERSIVE &&
-                    isBrowser
-                ) {
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .then(
 
-                    // 沉浸式全屏：
-                    // 不给状态栏留空间
-                    Modifier
+                    if (
+                        isBrowser &&
+                        browserDisplayMode ==
+                        BrowserDisplayMode.IMMERSIVE
+                    ) {
 
-                } else {
+                        /*
+                         * 沉浸式：
+                         * 不留顶部状态栏空间。
+                         */
+                        Modifier
 
-                    // 普通模式和普通全屏：
-                    // 给顶部状态栏留空间
-                    Modifier.statusBarsPadding()
-                }
-            )
+                    } else {
+
+                        /*
+                         * 普通页面 / 普通全屏：
+                         * 顶部状态栏仍存在。
+                         */
+                        Modifier
+                            .statusBarsPadding()
+                    }
+                )
     ) {
 
+        /*
+         * 页面内容区域
+         */
         Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
         ) {
 
-            when (val current = page) {
+            when (
+                val current =
+                    page
+            ) {
 
+                /*
+                 * 首页
+                 */
                 TuYuePage.Home -> {
 
                     HomeScreen(
@@ -131,18 +193,24 @@ fun TuYueApp(
                             bookmarkStore,
 
                         searchEngine =
-                            settings.searchEngine,
+                            settings
+                                .searchEngine,
 
-                        onOpenUrl = { url ->
+                        onOpenUrl = {
+                            url ->
 
                             page =
                                 TuYuePage.Browser(
-                                    url = url
+                                    url =
+                                        url
                                 )
                         }
                     )
                 }
 
+                /*
+                 * 添加网页
+                 */
                 TuYuePage.AddWebPage -> {
 
                     AddWebPageScreen(
@@ -150,13 +218,16 @@ fun TuYueApp(
                             bookmarkStore,
 
                         searchEngine =
-                            settings.searchEngine,
+                            settings
+                                .searchEngine,
 
-                        onOpenUrl = { url ->
+                        onOpenUrl = {
+                            url ->
 
                             page =
                                 TuYuePage.Browser(
-                                    url = url
+                                    url =
+                                        url
                                 )
                         },
 
@@ -168,6 +239,9 @@ fun TuYueApp(
                     )
                 }
 
+                /*
+                 * 浏览器
+                 */
                 is TuYuePage.Browser -> {
 
                     BrowserScreen(
@@ -175,7 +249,8 @@ fun TuYueApp(
                             current.url,
 
                         initialDesktopMode =
-                            settings.desktopMode,
+                            settings
+                                .desktopMode,
 
                         displayMode =
                             browserDisplayMode,
@@ -189,7 +264,8 @@ fun TuYueApp(
 
                         onDesktopModeChanged = {
 
-                            settings.desktopMode =
+                            settings
+                                .desktopMode =
                                 it
                         },
 
@@ -222,12 +298,17 @@ fun TuYueApp(
                             openSettings()
                         },
 
-                        onSaveToHome = { name, url ->
+                        onSaveToHome = {
+                            name,
+                            url ->
 
                             bookmarkStore.add(
                                 Bookmark(
-                                    name = name,
-                                    url = url
+                                    name =
+                                        name,
+
+                                    url =
+                                        url
                                 )
                             )
 
@@ -240,6 +321,9 @@ fun TuYueApp(
                     )
                 }
 
+                /*
+                 * 设置
+                 */
                 TuYuePage.Settings -> {
 
                     BackHandler {
@@ -249,7 +333,8 @@ fun TuYueApp(
                     }
 
                     SettingsScreen(
-                        settings = settings,
+                        settings =
+                            settings,
 
                         onBack = {
 
@@ -262,18 +347,30 @@ fun TuYueApp(
         }
 
         /*
-         * 浏览器进入：
+         * ---------------------------
+         * App 底部导航
+         * ---------------------------
          *
-         * 全屏
+         * 只有普通模式显示。
+         *
+         * 一旦浏览器进入：
+         *
+         * FULLSCREEN
          * 或
-         * 沉浸式全屏
+         * IMMERSIVE
          *
-         * 都隐藏兔跃自己的底部导航栏。
+         * 整个底栏从 Compose 布局中删除。
+         *
+         * 这样它不会继续占高度，
+         * WebView 会真正获得底部空间。
          */
-        if (!isBrowserFullscreen) {
+        if (
+            !isFullscreen
+        ) {
 
             CompactBottomBar(
-                currentPage = page,
+                currentPage =
+                    page,
 
                 onHome = {
 
@@ -317,38 +414,61 @@ private fun CompactBottomBar(
 ) {
 
     Surface(
-        tonalElevation = 3.dp
+        tonalElevation =
+            3.dp
     ) {
 
         Column {
 
             HorizontalDivider()
 
+            /*
+             * navigationBarsPadding()
+             *
+             * 只存在于普通模式的底栏。
+             *
+             * 全屏时 CompactBottomBar
+             * 整个都不会进入 Composition，
+             * 所以 navigation bar inset
+             * 不会留下任何灰色占位。
+             */
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .height(58.dp)
-                    .padding(
-                        horizontal = 8.dp
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .height(
+                            58.dp
+                        )
+                        .padding(
+                            horizontal =
+                                8.dp
+                        ),
 
                 verticalAlignment =
-                    Alignment.CenterVertically,
+                    Alignment
+                        .CenterVertically,
 
                 horizontalArrangement =
-                    Arrangement.SpaceEvenly
+                    Arrangement
+                        .SpaceEvenly
             ) {
 
+                /*
+                 * 首页
+                 */
                 TextButton(
-                    onClick = onHome,
+                    onClick =
+                        onHome,
 
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier
+                            .weight(1f)
                 ) {
 
                     Text(
-                        text = "首页",
+                        text =
+                            "首页",
 
                         fontWeight =
                             if (
@@ -365,20 +485,27 @@ private fun CompactBottomBar(
                     )
                 }
 
+                /*
+                 * 添加
+                 */
                 TextButton(
-                    onClick = onAdd,
+                    onClick =
+                        onAdd,
 
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier
+                            .weight(1f)
                 ) {
 
                     Text(
-                        text = "添加",
+                        text =
+                            "添加",
 
                         fontWeight =
                             if (
                                 currentPage ==
-                                TuYuePage.AddWebPage
+                                TuYuePage
+                                    .AddWebPage
                             ) {
 
                                 FontWeight.Bold
@@ -390,15 +517,21 @@ private fun CompactBottomBar(
                     )
                 }
 
+                /*
+                 * 设置
+                 */
                 TextButton(
-                    onClick = onSettings,
+                    onClick =
+                        onSettings,
 
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier
+                            .weight(1f)
                 ) {
 
                     Text(
-                        text = "设置",
+                        text =
+                            "设置",
 
                         fontWeight =
                             if (
