@@ -24,18 +24,15 @@ private sealed class TuYuePage {
 @Composable
 fun TuYueApp() {
 
-    val context =
-        LocalContext.current
+    val context = LocalContext.current
 
-    val settings =
-        remember {
-            AppSettings(context)
-        }
+    val settings = remember {
+        AppSettings(context)
+    }
 
-    val bookmarkStore =
-        remember {
-            BookmarkStore(context)
-        }
+    val bookmarkStore = remember {
+        BookmarkStore(context)
+    }
 
     var page by remember {
         mutableStateOf<TuYuePage>(
@@ -49,12 +46,16 @@ fun TuYueApp() {
 
             HomeScreen(
                 bookmarkStore = bookmarkStore,
-                searchEngine = settings.searchEngine,
+
+                searchEngine =
+                    settings.searchEngine,
 
                 onOpenUrl = { url ->
 
                     page =
-                        TuYuePage.Browser(url)
+                        TuYuePage.Browser(
+                            url = url
+                        )
                 }
             )
         }
@@ -62,24 +63,30 @@ fun TuYueApp() {
         is TuYuePage.Browser -> {
 
             BackHandler {
+
                 page =
                     TuYuePage.Home
             }
 
-         BrowserScreen(
-    initialUrl = currentPage.url,
+            BrowserScreen(
+                initialUrl =
+                    currentPage.url,
 
-    initialDesktopMode =
-        settings.desktopMode,
+                initialDesktopMode =
+                    settings.desktopMode,
 
-    onDesktopModeChanged = {
-        settings.desktopMode = it
-    },
+                onDesktopModeChanged = { enabled ->
 
-    onHome = {
-        page = TuYuePage.Home
-    }
-)
+                    settings.desktopMode =
+                        enabled
+                },
+
+                onHome = {
+
+                    page =
+                        TuYuePage.Home
+                }
+            )
         }
     }
 }
