@@ -66,15 +66,20 @@ fun TuYueApp() {
                     TuYuePage.Home
             }
 
-            BrowserScreen(
-                initialUrl =
-                    currentPage.url,
+         BrowserScreen(
+    initialUrl = currentPage.url,
 
-                onHome = {
-                    page =
-                        TuYuePage.Home
-                }
-            )
+    initialDesktopMode =
+        settings.desktopMode,
+
+    onDesktopModeChanged = {
+        settings.desktopMode = it
+    },
+
+    onHome = {
+        page = TuYuePage.Home
+    }
+)
         }
     }
 }
