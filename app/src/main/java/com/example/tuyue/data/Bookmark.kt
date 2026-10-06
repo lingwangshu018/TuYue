@@ -3,5 +3,6 @@ package com.example.tuyue.data
 data class Bookmark(
     val name: String,
     val url: String,
-    val iconUrl: String? = null
+    val iconUrl: String? = null,
+    val folderId: String? = null
 )
