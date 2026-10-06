@@ -10,16 +10,43 @@
             sans
         </item>
 
+        <!-- 状态栏使用深色图标 -->
         <item name="android:windowLightStatusBar">
             true
         </item>
 
+        <!-- 导航栏使用深色图标 -->
+        <item name="android:windowLightNavigationBar">
+            true
+        </item>
+
+        <!--
+            整个 Window 允许绘制到系统栏区域。
+            实际安全区域由 Compose 自己处理。
+        -->
+        <item name="android:windowDrawsSystemBarBackgrounds">
+            true
+        </item>
+
+        <!-- 状态栏透明 -->
         <item name="android:statusBarColor">
             @android:color/transparent
         </item>
 
+        <!--
+            这里非常重要：
+            不再把导航栏背景固定成白色。
+        -->
         <item name="android:navigationBarColor">
-            @android:color/white
+            @android:color/transparent
+        </item>
+
+        <!--
+            禁止 Android 自动给透明导航栏
+            加半透明的对比度背景。
+        -->
+        <item name="android:enforceNavigationBarContrast">
+            false
         </item>
 
         <item name="android:windowActionModeOverlay">
