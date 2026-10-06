@@ -20,9 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.tuyue.util.resolveInput
+import com.example.tuyue.util.SearchEngine
 
 @Composable
 fun HomeScreen(
+    searchEngine: SearchEngine,
     onOpenUrl: (String) -> Unit
 ) {
 
