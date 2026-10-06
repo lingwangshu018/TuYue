@@ -112,7 +112,10 @@ fun HomeScreen(
                     onClick = {
 
                         val url =
-                            resolveInput(input)
+                            resolveInput(
+                                input,
+                                searchEngine
+                            )
 
                         if (url == null) {
 
