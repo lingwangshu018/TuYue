@@ -1,4 +1,3 @@
-
 package com.example.tuyue
 
 import android.widget.Toast
@@ -14,12 +13,16 @@ import androidx.compose.ui.unit.dp
 import com.example.tuyue.data.AppSettings
 import com.example.tuyue.data.Bookmark
 import com.example.tuyue.data.BookmarkStore
+import com.example.tuyue.ui.AddWebPageScreen
 import com.example.tuyue.ui.BrowserScreen
 import com.example.tuyue.ui.HomeScreen
 import com.example.tuyue.ui.SettingsScreen
 
 private sealed class TuYuePage {
+
     data object Home : TuYuePage()
+
+    data object AddWebPage : TuYuePage()
 
     data class Browser(
         val url: String
@@ -54,9 +57,11 @@ fun TuYueApp() {
     }
 
     val openSettings = {
+
         if (page != TuYuePage.Settings) {
             previousPage = page
         }
+
         page = TuYuePage.Settings
     }
 
@@ -75,39 +80,81 @@ fun TuYueApp() {
             when (val current = page) {
 
                 TuYuePage.Home -> {
+
                     HomeScreen(
                         bookmarkStore = bookmarkStore,
-                        searchEngine = settings.searchEngine,
+
+                        searchEngine =
+                            settings.searchEngine,
+
                         onOpenUrl = { url ->
-                            page = TuYuePage.Browser(url)
+
+                            page =
+                                TuYuePage.Browser(
+                                    url = url
+                                )
+                        }
+                    )
+                }
+
+                TuYuePage.AddWebPage -> {
+
+                    AddWebPageScreen(
+                        bookmarkStore = bookmarkStore,
+
+                        searchEngine =
+                            settings.searchEngine,
+
+                        onOpenUrl = { url ->
+
+                            page =
+                                TuYuePage.Browser(
+                                    url = url
+                                )
+                        },
+
+                        onSaved = {
+
+                            page =
+                                TuYuePage.Home
                         }
                     )
                 }
 
                 is TuYuePage.Browser -> {
+
                     BrowserScreen(
-                        initialUrl = current.url,
+                        initialUrl =
+                            current.url,
 
                         initialDesktopMode =
                             settings.desktopMode,
 
                         onDesktopModeChanged = {
-                            settings.desktopMode = it
+
+                            settings.desktopMode =
+                                it
                         },
 
                         onHome = {
-                            page = TuYuePage.Home
+
+                            page =
+                                TuYuePage.Home
                         },
 
                         onAddWebPage = {
-                            page = TuYuePage.Home
+
+                            page =
+                                TuYuePage.AddWebPage
                         },
 
                         onSettings = {
+
                             openSettings()
                         },
 
                         onSaveToHome = { name, url ->
+
                             bookmarkStore.add(
                                 Bookmark(
                                     name = name,
@@ -127,33 +174,41 @@ fun TuYueApp() {
                 TuYuePage.Settings -> {
 
                     BackHandler {
-                        page = previousPage
+
+                        page =
+                            previousPage
                     }
 
                     SettingsScreen(
                         settings = settings,
+
                         onBack = {
-                            page = previousPage
+
+                            page =
+                                previousPage
                         }
                     )
                 }
             }
         }
 
-        // 全局统一的紧凑底栏
         CompactBottomBar(
             currentPage = page,
 
             onHome = {
-                page = TuYuePage.Home
+
+                page =
+                    TuYuePage.Home
             },
 
             onAdd = {
-                // 首页已经包含添加网页输入框
-                page = TuYuePage.Home
+
+                page =
+                    TuYuePage.AddWebPage
             },
 
             onSettings = {
+
                 openSettings()
             }
         )
@@ -171,7 +226,9 @@ private fun CompactBottomBar(
     Surface(
         tonalElevation = 3.dp
     ) {
+
         Column {
+
             HorizontalDivider()
 
             Row(
@@ -179,43 +236,80 @@ private fun CompactBottomBar(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .height(58.dp)
-                    .padding(horizontal = 8.dp),
+                    .padding(
+                        horizontal = 8.dp
+                    ),
 
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment =
+                    Alignment.CenterVertically,
+
                 horizontalArrangement =
                     Arrangement.SpaceEvenly
             ) {
 
                 TextButton(
                     onClick = onHome,
-                    modifier = Modifier.weight(1f)
+
+                    modifier =
+                        Modifier.weight(1f)
                 ) {
+
                     Text(
                         text = "首页",
+
                         fontWeight =
-                            if (currentPage == TuYuePage.Home)
+                            if (
+                                currentPage ==
+                                TuYuePage.Home
+                            ) {
                                 FontWeight.Bold
-                            else FontWeight.Normal
+                            } else {
+                                FontWeight.Normal
+                            }
                     )
                 }
 
                 TextButton(
                     onClick = onAdd,
-                    modifier = Modifier.weight(1f)
+
+                    modifier =
+                        Modifier.weight(1f)
                 ) {
-                    Text("添加")
+
+                    Text(
+                        text = "添加",
+
+                        fontWeight =
+                            if (
+                                currentPage ==
+                                TuYuePage.AddWebPage
+                            ) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            }
+                    )
                 }
 
                 TextButton(
                     onClick = onSettings,
-                    modifier = Modifier.weight(1f)
+
+                    modifier =
+                        Modifier.weight(1f)
                 ) {
+
                     Text(
                         text = "设置",
+
                         fontWeight =
-                            if (currentPage == TuYuePage.Settings)
+                            if (
+                                currentPage ==
+                                TuYuePage.Settings
+                            ) {
                                 FontWeight.Bold
-                            else FontWeight.Normal
+                            } else {
+                                FontWeight.Normal
+                            }
                     )
                 }
             }
