@@ -1,5 +1,6 @@
 package com.example.tuyue
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,12 +32,48 @@ class MainActivity : ComponentActivity() {
     ) {
         super.onCreate(savedInstanceState)
 
-        // 让 Compose 自己处理系统栏区域。
-        // 这样进入沉浸式全屏后，网页才能真正铺满屏幕。
+        /*
+         * 整个 App 使用 edge-to-edge。
+         *
+         * 系统状态栏 / 导航栏不再负责
+         * 给我们的 Compose 内容预留空间。
+         *
+         * 哪些页面需要安全区域，
+         * 由 Compose 自己决定。
+         */
         WindowCompat.setDecorFitsSystemWindows(
             window,
             false
         )
+
+        /*
+         * 系统栏背景透明。
+         *
+         * 尤其是底部导航区域，
+         * 防止隐藏导航栏以后仍然露出
+         * Window 默认的灰色背景。
+         */
+        window.statusBarColor =
+            Color.TRANSPARENT
+
+        window.navigationBarColor =
+            Color.TRANSPARENT
+
+        /*
+         * Android 10+：
+         * 禁止系统自动给导航栏增加
+         * 对比度背景层。
+         *
+         * 否则某些手机即使导航栏透明，
+         * 底部仍可能出现半透明灰色区域。
+         */
+        if (
+            android.os.Build.VERSION.SDK_INT >=
+            android.os.Build.VERSION_CODES.Q
+        ) {
+            window.isNavigationBarContrastEnforced =
+                false
+        }
 
         setContent {
 
@@ -53,11 +90,20 @@ class MainActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(Unit) {
+
                     delay(1500)
+
                     showSplash = false
                 }
 
-                LaunchedEffect(browserDisplayMode) {
+                /*
+                 * 浏览器显示模式变化以后，
+                 * 同步修改真正的 Android 系统栏。
+                 */
+                LaunchedEffect(
+                    browserDisplayMode
+                ) {
+
                     applyBrowserDisplayMode(
                         browserDisplayMode
                     )
@@ -70,7 +116,18 @@ class MainActivity : ComponentActivity() {
                 } else {
 
                     Surface(
-                        modifier = Modifier.fillMaxSize()
+                        modifier =
+                            Modifier.fillMaxSize(),
+
+                        /*
+                         * 给整个 Window 一个确定的背景，
+                         * 避免 edge-to-edge 区域露出
+                         * Activity 默认 Window 背景。
+                         */
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .background
                     ) {
 
                         TuYueApp(
@@ -97,8 +154,14 @@ class MainActivity : ComponentActivity() {
                 window.decorView
             )
 
-        // 从屏幕边缘滑动时，
-        // 可以临时唤出被隐藏的系统栏。
+        /*
+         * 系统栏隐藏以后，
+         * 用户仍然可以从屏幕边缘滑动，
+         * 临时把系统栏叫出来。
+         *
+         * 临时系统栏覆盖在网页上，
+         * 不应该重新挤压 WebView。
+         */
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat
                 .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -107,8 +170,12 @@ class MainActivity : ComponentActivity() {
 
             BrowserDisplayMode.NORMAL -> {
 
-                // 普通模式：
-                // 状态栏 + 导航栏全部显示
+                /*
+                 * 普通模式：
+                 *
+                 * 顶部状态栏显示
+                 * 底部导航栏显示
+                 */
                 controller.show(
                     WindowInsetsCompat.Type.systemBars()
                 )
@@ -116,13 +183,16 @@ class MainActivity : ComponentActivity() {
 
             BrowserDisplayMode.FULLSCREEN -> {
 
-                // 全屏：
-                // 保留顶部时间/状态栏
+                /*
+                 * 普通全屏：
+                 *
+                 * 顶部状态栏保留
+                 * 底部导航栏隐藏
+                 */
                 controller.show(
                     WindowInsetsCompat.Type.statusBars()
                 )
 
-                // 隐藏底部导航栏
                 controller.hide(
                     WindowInsetsCompat.Type.navigationBars()
                 )
@@ -130,8 +200,12 @@ class MainActivity : ComponentActivity() {
 
             BrowserDisplayMode.IMMERSIVE -> {
 
-                // 沉浸式全屏：
-                // 状态栏 + 导航栏全部隐藏
+                /*
+                 * 沉浸式全屏：
+                 *
+                 * 顶部状态栏隐藏
+                 * 底部导航栏隐藏
+                 */
                 controller.hide(
                     WindowInsetsCompat.Type.systemBars()
                 )
@@ -141,8 +215,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
 
-        // Activity 销毁时恢复系统栏，
-        // 避免系统栏状态残留。
+        /*
+         * Activity 销毁以前恢复系统栏。
+         */
         WindowCompat.getInsetsController(
             window,
             window.decorView
