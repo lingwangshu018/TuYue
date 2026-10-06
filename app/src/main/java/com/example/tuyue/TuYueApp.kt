@@ -1,6 +1,5 @@
 package com.example.tuyue
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,12 +60,6 @@ fun TuYueApp() {
         }
 
         is TuYuePage.Browser -> {
-
-            BackHandler {
-
-                page =
-                    TuYuePage.Home
-            }
 
             BrowserScreen(
                 initialUrl =
