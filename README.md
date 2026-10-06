@@ -1,2 +1,11 @@
-# tutu
-简单地小浏览器
+Name:
+TuYue
+
+Package name:
+com.example.tuyue
+
+Language:
+Kotlin
+
+Minimum SDK:
+API 26
