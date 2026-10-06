@@ -1,4 +1,3 @@
-
 package com.example.tuyue.ui
 
 import android.annotation.SuppressLint
@@ -22,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.tuyue.BrowserDisplayMode
 
 private const val DESKTOP_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
@@ -33,13 +33,28 @@ private const val DESKTOP_USER_AGENT =
 fun BrowserScreen(
     initialUrl: String,
     initialDesktopMode: Boolean,
-    onDesktopModeChanged: (Boolean) -> Unit,
+
+    displayMode: BrowserDisplayMode,
+
+    onDisplayModeChanged:
+        (BrowserDisplayMode) -> Unit,
+
+    onDesktopModeChanged:
+        (Boolean) -> Unit,
+
     onHome: () -> Unit,
+
     onAddWebPage: () -> Unit,
+
     onSettings: () -> Unit,
-    onSaveToHome: (String, String) -> Unit
+
+    onSaveToHome:
+        (String, String) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val context =
+        androidx.compose.ui.platform
+            .LocalContext.current
 
     var webView by remember {
         mutableStateOf<WebView?>(null)
@@ -50,7 +65,9 @@ fun BrowserScreen(
     }
 
     var desktopMode by remember {
-        mutableStateOf(initialDesktopMode)
+        mutableStateOf(
+            initialDesktopMode
+        )
     }
 
     var pageTitle by remember {
@@ -69,272 +86,597 @@ fun BrowserScreen(
         mutableIntStateOf(0)
     }
 
+    val isFullscreen =
+        displayMode !=
+        BrowserDisplayMode.NORMAL
+
+    /*
+     * 返回键优先级：
+     *
+     * 1. 关闭菜单
+     * 2. 退出全屏
+     * 3. 网页后退
+     * 4. 返回兔跃首页
+     */
     BackHandler {
-        if (menuExpanded) {
-            menuExpanded = false
-        } else {
-            val view = webView
-            if (view?.canGoBack() == true) {
-                view.goBack()
-            } else {
+
+        when {
+
+            menuExpanded -> {
+
+                menuExpanded = false
+            }
+
+            isFullscreen -> {
+
+                onDisplayModeChanged(
+                    BrowserDisplayMode.NORMAL
+                )
+            }
+
+            webView?.canGoBack() == true -> {
+
+                webView?.goBack()
+            }
+
+            else -> {
+
                 onHome()
             }
         }
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier =
+            Modifier.fillMaxSize()
     ) {
 
-        // 顶部固定工具栏
-        Surface(
-            tonalElevation = 2.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+        /*
+         * 普通模式显示网页工具栏。
+         *
+         * 全屏和沉浸式全屏：
+         * 整个工具栏直接从布局中移除。
+         */
+        if (!isFullscreen) {
+
+            Surface(
+                tonalElevation = 2.dp
             ) {
 
-                TextButton(
-                    onClick = {
-                        val view = webView
-                        if (view?.canGoBack() == true) {
-                            view.goBack()
-                        } else {
-                            onHome()
-                        }
-                    }
-                ) {
-                    Text(
-                        text = "‹",
-                        fontSize = 30.sp
-                    )
-                }
-
-                Text(
-                    text = pageTitle,
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(
+                            horizontal = 8.dp
+                        ),
 
-                // 顶栏最右边的下拉菜单
-                Box {
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
 
-                    IconButton(
+                    /*
+                     * 返回
+                     */
+                    TextButton(
                         onClick = {
-                            menuExpanded = true
-                        }
-                    ) {
-                        Text(
-                            text = "⋮",
-                            fontSize = 26.sp
-                        )
-                    }
 
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = {
-                            menuExpanded = false
-                        }
-                    ) {
+                            val view =
+                                webView
 
-                        DropdownMenuItem(
-                            text = { Text("回到主页") },
-                            onClick = {
-                                menuExpanded = false
+                            if (
+                                view?.canGoBack() ==
+                                true
+                            ) {
+
+                                view.goBack()
+
+                            } else {
+
                                 onHome()
                             }
-                        )
+                        }
+                    ) {
 
-                        DropdownMenuItem(
-                            text = { Text("前进") },
-                            enabled = canGoForward,
+                        Text(
+                            text = "‹",
+                            fontSize = 30.sp
+                        )
+                    }
+
+                    /*
+                     * 网页标题
+                     */
+                    Text(
+                        text = pageTitle,
+
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(
+                                horizontal = 4.dp
+                            ),
+
+                        maxLines = 1,
+
+                        overflow =
+                            TextOverflow.Ellipsis,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleMedium
+                    )
+
+                    /*
+                     * 右上角菜单
+                     */
+                    Box {
+
+                        IconButton(
                             onClick = {
-                                menuExpanded = false
-                                webView?.goForward()
+
+                                menuExpanded =
+                                    true
                             }
-                        )
+                        ) {
 
-                        DropdownMenuItem(
-                            text = { Text("刷新") },
-                            onClick = {
-                                menuExpanded = false
-                                webView?.reload()
+                            Text(
+                                text = "⋮",
+                                fontSize = 26.sp
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded =
+                                menuExpanded,
+
+                            onDismissRequest = {
+
+                                menuExpanded =
+                                    false
                             }
-                        )
+                        ) {
 
-                        HorizontalDivider()
+                            /*
+                             * 回到主页
+                             */
+                            DropdownMenuItem(
+                                text = {
 
-                        DropdownMenuItem(
-                            text = { Text("保存到首页") },
-                            onClick = {
-                                menuExpanded = false
+                                    Text(
+                                        "回到主页"
+                                    )
+                                },
 
-                                val url =
-                                    webView?.url ?: currentUrl
+                                onClick = {
 
-                                val name =
-                                    pageTitle.ifBlank { "网页" }
+                                    menuExpanded =
+                                        false
 
-                                if (
-                                    url.startsWith("http://") ||
-                                    url.startsWith("https://")
-                                ) {
-                                    onSaveToHome(name, url)
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "当前页面无法收藏",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    onHome()
                                 }
-                            }
-                        )
+                            )
 
-                        DropdownMenuItem(
-                            text = { Text("添加网页") },
-                            onClick = {
-                                menuExpanded = false
-                                onAddWebPage()
-                            }
-                        )
+                            /*
+                             * 前进
+                             */
+                            DropdownMenuItem(
+                                text = {
 
-                        HorizontalDivider()
+                                    Text(
+                                        "前进"
+                                    )
+                                },
 
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    if (desktopMode) {
-                                        "切换手机版网页"
+                                enabled =
+                                    canGoForward,
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    webView
+                                        ?.goForward()
+                                }
+                            )
+
+                            /*
+                             * 刷新
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        "刷新"
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    webView
+                                        ?.reload()
+                                }
+                            )
+
+                            HorizontalDivider()
+
+                            /*
+                             * 全屏
+                             *
+                             * 保留顶部系统时间栏
+                             * 隐藏底部系统导航栏
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        "全屏"
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    onDisplayModeChanged(
+                                        BrowserDisplayMode
+                                            .FULLSCREEN
+                                    )
+                                }
+                            )
+
+                            /*
+                             * 沉浸式全屏
+                             *
+                             * 状态栏和导航栏
+                             * 全部隐藏
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        "沉浸式全屏"
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    onDisplayModeChanged(
+                                        BrowserDisplayMode
+                                            .IMMERSIVE
+                                    )
+                                }
+                            )
+
+                            HorizontalDivider()
+
+                            /*
+                             * 保存到首页
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        "保存到首页"
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    val url =
+                                        webView?.url
+                                            ?: currentUrl
+
+                                    val name =
+                                        pageTitle
+                                            .ifBlank {
+                                                "网页"
+                                            }
+
+                                    if (
+                                        url.startsWith(
+                                            "http://"
+                                        ) ||
+                                        url.startsWith(
+                                            "https://"
+                                        )
+                                    ) {
+
+                                        onSaveToHome(
+                                            name,
+                                            url
+                                        )
+
                                     } else {
-                                        "切换桌面版网页"
+
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "当前页面无法收藏",
+                                                Toast.LENGTH_SHORT
+                                            )
+                                            .show()
                                     }
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-
-                                desktopMode = !desktopMode
-
-                                onDesktopModeChanged(
-                                    desktopMode
-                                )
-
-                                webView?.let { view ->
-                                    view.settings.userAgentString =
-                                        if (desktopMode) {
-                                            DESKTOP_USER_AGENT
-                                        } else {
-                                            null
-                                        }
-
-                                    view.reload()
                                 }
-                            }
-                        )
+                            )
 
-                        DropdownMenuItem(
-                            text = { Text("浏览器设置") },
-                            onClick = {
-                                menuExpanded = false
-                                onSettings()
-                            }
-                        )
+                            /*
+                             * 添加网页
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        "添加网页"
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    onAddWebPage()
+                                }
+                            )
+
+                            HorizontalDivider()
+
+                            /*
+                             * 桌面版 / 手机版
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        if (
+                                            desktopMode
+                                        ) {
+
+                                            "切换手机版网页"
+
+                                        } else {
+
+                                            "切换桌面版网页"
+                                        }
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    desktopMode =
+                                        !desktopMode
+
+                                    onDesktopModeChanged(
+                                        desktopMode
+                                    )
+
+                                    webView?.let {
+                                        view ->
+
+                                        view.settings
+                                            .userAgentString =
+                                            if (
+                                                desktopMode
+                                            ) {
+
+                                                DESKTOP_USER_AGENT
+
+                                            } else {
+
+                                                null
+                                            }
+
+                                        view.reload()
+                                    }
+                                }
+                            )
+
+                            /*
+                             * 浏览器设置
+                             */
+                            DropdownMenuItem(
+                                text = {
+
+                                    Text(
+                                        "浏览器设置"
+                                    )
+                                },
+
+                                onClick = {
+
+                                    menuExpanded =
+                                        false
+
+                                    onSettings()
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
 
-        if (progress in 1..99) {
+        /*
+         * 网页加载进度
+         */
+        if (
+            progress in 1..99
+        ) {
+
             LinearProgressIndicator(
                 progress = {
+
                     progress / 100f
                 },
-                modifier = Modifier.fillMaxWidth()
+
+                modifier =
+                    Modifier.fillMaxWidth()
             )
         }
 
-        // 网页自动占满剩余空间
+        /*
+         * WebView
+         *
+         * 普通模式：
+         * 占工具栏和底栏之间的区域。
+         *
+         * 全屏：
+         * 工具栏和底栏消失，
+         * WebView 自动扩大。
+         *
+         * 沉浸式：
+         * WebView 真正铺满屏幕。
+         */
         AndroidView(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
 
             factory = { ctx ->
+
                 WebView(ctx).apply {
 
                     webView = this
 
                     settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        databaseEnabled = true
 
-                        loadsImagesAutomatically = true
-                        useWideViewPort = true
-                        loadWithOverviewMode = true
+                        javaScriptEnabled =
+                            true
 
-                        builtInZoomControls = true
-                        displayZoomControls = false
+                        domStorageEnabled =
+                            true
+
+                        databaseEnabled =
+                            true
+
+                        loadsImagesAutomatically =
+                            true
+
+                        useWideViewPort =
+                            true
+
+                        loadWithOverviewMode =
+                            true
+
+                        builtInZoomControls =
+                            true
+
+                        displayZoomControls =
+                            false
 
                         userAgentString =
-                            if (desktopMode) {
+                            if (
+                                desktopMode
+                            ) {
+
                                 DESKTOP_USER_AGENT
+
                             } else {
+
                                 null
                             }
                     }
 
-                    CookieManager.getInstance()
-                        .setAcceptCookie(true)
+                    /*
+                     * Cookie
+                     */
+                    CookieManager
+                        .getInstance()
+                        .setAcceptCookie(
+                            true
+                        )
 
+                    /*
+                     * WebViewClient
+                     */
                     webViewClient =
-                        object : WebViewClient() {
+                        object :
+                            WebViewClient() {
 
                             override fun onPageFinished(
-                                view: WebView?,
-                                url: String?
+                                view:
+                                    WebView?,
+                                url:
+                                    String?
                             ) {
+
                                 currentUrl =
-                                    url ?: currentUrl
+                                    url
+                                        ?: currentUrl
 
                                 canGoForward =
-                                    view?.canGoForward() == true
+                                    view
+                                        ?.canGoForward() ==
+                                    true
 
-                                val title = view?.title
-                                if (!title.isNullOrBlank()) {
-                                    pageTitle = title
+                                val title =
+                                    view?.title
+
+                                if (
+                                    !title
+                                        .isNullOrBlank()
+                                ) {
+
+                                    pageTitle =
+                                        title
                                 }
                             }
                         }
 
+                    /*
+                     * WebChromeClient
+                     */
                     webChromeClient =
-                        object : WebChromeClient() {
+                        object :
+                            WebChromeClient() {
 
                             override fun onReceivedTitle(
-                                view: WebView?,
-                                title: String?
+                                view:
+                                    WebView?,
+                                title:
+                                    String?
                             ) {
-                                if (!title.isNullOrBlank()) {
-                                    pageTitle = title
+
+                                if (
+                                    !title
+                                        .isNullOrBlank()
+                                ) {
+
+                                    pageTitle =
+                                        title
                                 }
                             }
 
                             override fun onProgressChanged(
-                                view: WebView?,
-                                newProgress: Int
+                                view:
+                                    WebView?,
+                                newProgress:
+                                    Int
                             ) {
-                                progress = newProgress
+
+                                progress =
+                                    newProgress
                             }
                         }
 
+                    /*
+                     * 下载
+                     */
                     setDownloadListener {
                         url,
                         userAgent,
@@ -343,30 +685,55 @@ fun BrowserScreen(
                         _ ->
 
                         downloadFile(
-                            context = ctx,
-                            url = url,
-                            userAgent = userAgent,
+                            context =
+                                ctx,
+
+                            url =
+                                url,
+
+                            userAgent =
+                                userAgent,
+
                             contentDisposition =
                                 contentDisposition,
-                            mimeType = mimeType
+
+                            mimeType =
+                                mimeType
                         )
                     }
 
-                    loadUrl(initialUrl)
+                    /*
+                     * 打开网页
+                     */
+                    loadUrl(
+                        initialUrl
+                    )
                 }
             },
 
-            onRelease = { view ->
+            onRelease = {
+                view ->
+
                 view.stopLoading()
-                view.loadUrl("about:blank")
+
+                view.loadUrl(
+                    "about:blank"
+                )
+
                 view.removeAllViews()
+
                 view.destroy()
-                webView = null
+
+                webView =
+                    null
             }
         )
     }
 }
 
+/*
+ * 下载文件
+ */
 private fun downloadFile(
     context: Context,
     url: String,
@@ -374,64 +741,130 @@ private fun downloadFile(
     contentDisposition: String?,
     mimeType: String?
 ) {
+
+    /*
+     * 暂时只处理 http / https。
+     */
     if (
-        !url.startsWith("https://", true) &&
-        !url.startsWith("http://", true)
+        !url.startsWith(
+            "https://",
+            true
+        ) &&
+        !url.startsWith(
+            "http://",
+            true
+        )
     ) {
+
         Toast.makeText(
             context,
             "暂不支持 blob/data 下载",
             Toast.LENGTH_SHORT
         ).show()
+
         return
     }
 
     try {
-        val fileName = URLUtil.guessFileName(
-            url,
-            contentDisposition,
-            mimeType
-        ).replace("/", "_")
-            .replace("\\", "_")
 
-        val request = DownloadManager.Request(
-            Uri.parse(url)
-        ).apply {
-
-            setTitle(fileName)
-
-            setMimeType(
-                mimeType ?: "application/octet-stream"
+        /*
+         * 获取文件名
+         */
+        val fileName =
+            URLUtil.guessFileName(
+                url,
+                contentDisposition,
+                mimeType
             )
+                .replace(
+                    "/",
+                    "_"
+                )
+                .replace(
+                    "\\",
+                    "_"
+                )
 
-            setNotificationVisibility(
-                DownloadManager.Request
-                    .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-            )
+        /*
+         * 创建系统下载任务
+         */
+        val request =
+            DownloadManager.Request(
+                Uri.parse(url)
+            ).apply {
 
-            setDestinationInExternalPublicDir(
-                Environment.DIRECTORY_DOWNLOADS,
-                "兔跃/$fileName"
-            )
+                setTitle(
+                    fileName
+                )
 
-            userAgent?.let {
-                addRequestHeader("User-Agent", it)
+                setMimeType(
+                    mimeType
+                        ?: "application/octet-stream"
+                )
+
+                setNotificationVisibility(
+                    DownloadManager
+                        .Request
+                        .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                )
+
+                /*
+                 * 下载位置：
+                 *
+                 * Downloads/兔跃/
+                 */
+                setDestinationInExternalPublicDir(
+                    Environment
+                        .DIRECTORY_DOWNLOADS,
+
+                    "兔跃/$fileName"
+                )
+
+                /*
+                 * User-Agent
+                 */
+                userAgent?.let {
+
+                    addRequestHeader(
+                        "User-Agent",
+                        it
+                    )
+                }
+
+                /*
+                 * Cookie
+                 *
+                 * 一些登录网站下载文件时需要。
+                 */
+                val cookies =
+                    CookieManager
+                        .getInstance()
+                        .getCookie(
+                            url
+                        )
+
+                if (
+                    !cookies.isNullOrBlank()
+                ) {
+
+                    addRequestHeader(
+                        "Cookie",
+                        cookies
+                    )
+                }
             }
 
-            val cookies =
-                CookieManager.getInstance()
-                    .getCookie(url)
+        /*
+         * 开始下载
+         */
+        val manager =
+            context.getSystemService(
+                Context.DOWNLOAD_SERVICE
+            ) as DownloadManager
 
-            if (!cookies.isNullOrBlank()) {
-                addRequestHeader("Cookie", cookies)
-            }
-        }
-
-        val manager = context.getSystemService(
-            Context.DOWNLOAD_SERVICE
-        ) as DownloadManager
-
-        manager.enqueue(request)
+        manager.enqueue(
+            request
+        )
 
         Toast.makeText(
             context,
@@ -439,7 +872,10 @@ private fun downloadFile(
             Toast.LENGTH_SHORT
         ).show()
 
-    } catch (e: Exception) {
+    } catch (
+        e: Exception
+    ) {
+
         Toast.makeText(
             context,
             "下载失败：${e.message}",
