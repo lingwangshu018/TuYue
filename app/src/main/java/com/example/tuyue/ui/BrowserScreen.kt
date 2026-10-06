@@ -26,8 +26,8 @@ import kotlinx.coroutines.delay
 
 private const val DESKTOP_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-    "Chrome/140.0.0.0 Safari/537.36"
+        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+        "Chrome/140.0.0.0 Safari/537.36"
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -78,18 +78,32 @@ fun BrowserScreen(
         displayMode != BrowserDisplayMode.NORMAL
 
     /*
-     * 全屏模式发生变化以后，
-     * WebView 的实际可用高度也会变化。
+     * ----------------------------------------------------
+     * 全屏切换后的 WebView 刷新 + 尺寸诊断
+     * ----------------------------------------------------
      *
-     * Compose 会重新布局 AndroidView，
-     * 但网页内部不一定马上重新计算 viewport。
+     * 现在我们不再猜底部空白来自哪里。
      *
-     * 因此这里主动：
+     * 这里会同时取得：
      *
-     * 1. requestLayout()
-     * 2. invalidate()
-     * 3. 等布局完成
-     * 4. 向网页发送 resize 事件
+     * Android 层：
+     * Root 宽高
+     * WebView 宽高
+     * WebView 在屏幕中的 Y
+     * WebView bottom
+     *
+     * JavaScript 层：
+     * window.innerHeight
+     * documentElement.clientHeight
+     * body 高度
+     * scrollHeight
+     *
+     * 这样就能判断：
+     *
+     * 1. Compose 是否少给了 WebView 高度
+     * 2. WebView 是否已经真正铺满
+     * 3. HTML viewport 是否少了一截
+     * 4. 是否只是网页自己的 body 没铺满
      */
     LaunchedEffect(
         displayMode,
@@ -100,39 +114,27 @@ fun BrowserScreen(
             webView ?: return@LaunchedEffect
 
         /*
-         * 第一轮：
-         * 让 Android View 重新测量。
+         * 第一次要求 Android 重新布局。
          */
         view.post {
 
             view.requestLayout()
-
             view.invalidate()
         }
 
         /*
-         * 等 Compose / Window Insets
-         * 完成第一轮布局。
+         * 等待 Compose / Window Insets
+         * 完成第一轮尺寸变化。
          */
         delay(100)
 
         view.post {
 
             view.requestLayout()
-
             view.invalidate()
 
             /*
-             * 通知网页：
-             * viewport 尺寸发生变化。
-             *
-             * 对使用：
-             *
-             * 100vh
-             * 100dvh
-             * window.innerHeight
-             *
-             * 的网页尤其重要。
+             * 通知网页 viewport 已发生变化。
              */
             view.evaluateJavascript(
                 """
@@ -150,17 +152,14 @@ fun BrowserScreen(
         }
 
         /*
-         * 某些 Android ROM 的系统栏动画
-         * 会比 Compose 布局慢一点。
-         *
-         * 再做一次最终同步。
+         * 某些手机隐藏系统栏有动画，
+         * 再等一轮。
          */
         delay(250)
 
         view.post {
 
             view.requestLayout()
-
             view.invalidate()
 
             view.evaluateJavascript(
@@ -177,17 +176,136 @@ fun BrowserScreen(
                 null
             )
         }
+
+        /*
+         * NORMAL 模式不用弹诊断。
+         *
+         * 只有：
+         * FULLSCREEN
+         * IMMERSIVE
+         *
+         * 才测量。
+         */
+        if (
+            displayMode !=
+            BrowserDisplayMode.NORMAL
+        ) {
+
+            /*
+             * 等系统栏动画和 Compose
+             * 最终稳定下来。
+             */
+            delay(500)
+
+            view.post {
+
+                /*
+                 * WebView 左上角在真实屏幕中的位置。
+                 */
+                val location =
+                    IntArray(2)
+
+                view.getLocationOnScreen(
+                    location
+                )
+
+                /*
+                 * Activity 根 View。
+                 */
+                val rootView =
+                    view.rootView
+
+                /*
+                 * 同时读取网页自己的 viewport。
+                 */
+                view.evaluateJavascript(
+                    """
+                    (function() {
+                        try {
+                            var body = document.body;
+                            var html = document.documentElement;
+
+                            return JSON.stringify({
+                                innerWidth:
+                                    window.innerWidth,
+
+                                innerHeight:
+                                    window.innerHeight,
+
+                                clientWidth:
+                                    html
+                                        ? html.clientWidth
+                                        : 0,
+
+                                clientHeight:
+                                    html
+                                        ? html.clientHeight
+                                        : 0,
+
+                                bodyHeight:
+                                    body
+                                        ? Math.round(
+                                            body.getBoundingClientRect().height
+                                          )
+                                        : 0,
+
+                                bodyScrollHeight:
+                                    body
+                                        ? body.scrollHeight
+                                        : 0,
+
+                                htmlScrollHeight:
+                                    html
+                                        ? html.scrollHeight
+                                        : 0,
+
+                                devicePixelRatio:
+                                    window.devicePixelRatio
+                            });
+                        } catch (e) {
+
+                            return JSON.stringify({
+                                error:
+                                    String(e)
+                            });
+                        }
+                    })();
+                    """.trimIndent()
+                ) { result ->
+
+                    /*
+                     * 这里显示的就是我们真正需要的
+                     * 诊断结果。
+                     */
+                    val message =
+                        """
+                        MODE: $displayMode
+                        Root: ${rootView.width} x ${rootView.height}
+                        WebView: ${view.width} x ${view.height}
+                        Y: ${location[1]}
+                        Bottom: ${location[1] + view.height}
+                        JS: $result
+                        """.trimIndent()
+
+                    Toast.makeText(
+                        context,
+                        message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
     }
 
     /*
-     * 返回键处理。
+     * ----------------------------------------------------
+     * 返回键
+     * ----------------------------------------------------
      *
-     * 优先级：
-     *
-     * 1. 关闭菜单
-     * 2. 退出全屏
-     * 3. 网页后退
-     * 4. 返回首页
+     * 1. 菜单打开 -> 关闭菜单
+     * 2. 正在全屏 -> 退出全屏
+     * 3. WebView 可以后退 -> 网页后退
+     * 4. 否则 -> 回首页
      */
     BackHandler {
 
@@ -219,27 +337,9 @@ fun BrowserScreen(
     }
 
     /*
-     * 整个 BrowserScreen。
-     *
-     * 普通模式：
-     *
-     * ┌───────────────┐
-     * │ 浏览器工具栏    │
-     * ├───────────────┤
-     * │               │
-     * │    WebView    │
-     * │               │
-     * └───────────────┘
-     *
-     * 全屏：
-     *
-     * ┌───────────────┐
-     * │               │
-     * │               │
-     * │    WebView    │
-     * │               │
-     * │               │
-     * └───────────────┘
+     * ----------------------------------------------------
+     * 浏览器主体
+     * ----------------------------------------------------
      */
     Column(
         modifier =
@@ -247,20 +347,16 @@ fun BrowserScreen(
     ) {
 
         /*
-         * -------------------------
-         * 浏览器顶部工具栏
-         * -------------------------
+         * 普通模式显示浏览器顶部栏。
          *
-         * 只有 NORMAL 模式显示。
-         *
-         * FULLSCREEN /
-         * IMMERSIVE 时整个 Composable
-         * 从布局中删除。
+         * 全屏 / 沉浸式全屏时，
+         * 顶部栏完全退出布局。
          */
         if (!isFullscreen) {
 
             Surface(
-                tonalElevation = 2.dp
+                tonalElevation =
+                    2.dp
             ) {
 
                 Row(
@@ -269,7 +365,8 @@ fun BrowserScreen(
                             .fillMaxWidth()
                             .height(56.dp)
                             .padding(
-                                horizontal = 8.dp
+                                horizontal =
+                                    8.dp
                             ),
 
                     verticalAlignment =
@@ -300,25 +397,31 @@ fun BrowserScreen(
                     ) {
 
                         Text(
-                            text = "‹",
-                            fontSize = 30.sp
+                            text =
+                                "‹",
+
+                            fontSize =
+                                30.sp
                         )
                     }
 
                     /*
-                     * 网页标题
+                     * 当前网页标题
                      */
                     Text(
-                        text = pageTitle,
+                        text =
+                            pageTitle,
 
                         modifier =
                             Modifier
                                 .weight(1f)
                                 .padding(
-                                    horizontal = 4.dp
+                                    horizontal =
+                                        4.dp
                                 ),
 
-                        maxLines = 1,
+                        maxLines =
+                            1,
 
                         overflow =
                             TextOverflow.Ellipsis,
@@ -343,8 +446,11 @@ fun BrowserScreen(
                         ) {
 
                             Text(
-                                text = "⋮",
-                                fontSize = 26.sp
+                                text =
+                                    "⋮",
+
+                                fontSize =
+                                    26.sp
                             )
                         }
 
@@ -359,9 +465,6 @@ fun BrowserScreen(
                             }
                         ) {
 
-                            /*
-                             * 回到主页
-                             */
                             DropdownMenuItem(
                                 text = {
 
@@ -379,9 +482,6 @@ fun BrowserScreen(
                                 }
                             )
 
-                            /*
-                             * 前进
-                             */
                             DropdownMenuItem(
                                 text = {
 
@@ -403,9 +503,6 @@ fun BrowserScreen(
                                 }
                             )
 
-                            /*
-                             * 刷新
-                             */
                             DropdownMenuItem(
                                 text = {
 
@@ -427,7 +524,7 @@ fun BrowserScreen(
                             HorizontalDivider()
 
                             /*
-                             * 全屏
+                             * 全屏：
                              *
                              * 保留顶部系统状态栏，
                              * 隐藏底部系统导航栏。
@@ -453,10 +550,9 @@ fun BrowserScreen(
                             )
 
                             /*
-                             * 沉浸式全屏
+                             * 沉浸式全屏：
                              *
-                             * 顶部状态栏和
-                             * 底部导航栏全部隐藏。
+                             * 状态栏、导航栏全部隐藏。
                              */
                             DropdownMenuItem(
                                 text = {
@@ -554,7 +650,7 @@ fun BrowserScreen(
                             HorizontalDivider()
 
                             /*
-                             * 手机版 / 桌面版
+                             * 手机版 / 桌面版切换
                              */
                             DropdownMenuItem(
                                 text = {
@@ -632,7 +728,7 @@ fun BrowserScreen(
         }
 
         /*
-         * 加载进度条
+         * 网页加载进度。
          */
         if (
             progress in 1..99
@@ -650,15 +746,9 @@ fun BrowserScreen(
         }
 
         /*
-         * -------------------------
+         * ------------------------------------------------
          * WebView
-         * -------------------------
-         *
-         * weight(1f) 会始终获得 Column
-         * 剩余的全部高度。
-         *
-         * 当顶部工具栏消失后，
-         * WebView 会重新测量并扩大。
+         * ------------------------------------------------
          */
         AndroidView(
             modifier =
@@ -678,7 +768,7 @@ fun BrowserScreen(
                         this
 
                     /*
-                     * WebView 设置。
+                     * WebView 基础设置。
                      */
                     settings.apply {
 
@@ -729,7 +819,7 @@ fun BrowserScreen(
                         )
 
                     /*
-                     * 页面导航。
+                     * 页面导航
                      */
                     webViewClient =
                         object :
@@ -747,7 +837,7 @@ fun BrowserScreen(
                                 canGoForward =
                                     view
                                         ?.canGoForward() ==
-                                    true
+                                        true
 
                                 val title =
                                     view?.title
@@ -762,8 +852,8 @@ fun BrowserScreen(
                                 }
 
                                 /*
-                                 * 页面第一次加载完成以后，
-                                 * 再主动通知一次网页尺寸。
+                                 * 页面加载完成以后，
+                                 * 主动触发一次 viewport resize。
                                  */
                                 view?.post {
 
@@ -789,7 +879,7 @@ fun BrowserScreen(
                         }
 
                     /*
-                     * 标题和加载进度。
+                     * 标题与加载进度。
                      */
                     webChromeClient =
                         object :
@@ -849,7 +939,7 @@ fun BrowserScreen(
                     }
 
                     /*
-                     * 打开初始网页。
+                     * 打开初始网址。
                      */
                     loadUrl(
                         initialUrl
@@ -858,8 +948,8 @@ fun BrowserScreen(
             },
 
             /*
-             * AndroidView 从 Composition
-             * 中真正移除时销毁 WebView。
+             * BrowserScreen 真正销毁以后，
+             * 释放 WebView。
              */
             onRelease = {
                 view ->
@@ -882,9 +972,9 @@ fun BrowserScreen(
 }
 
 /*
- * -----------------------------
+ * ----------------------------------------------------
  * 下载
- * -----------------------------
+ * ----------------------------------------------------
  */
 private fun downloadFile(
     context: Context,
@@ -895,7 +985,7 @@ private fun downloadFile(
 ) {
 
     /*
-     * 当前只支持标准 HTTP / HTTPS 下载。
+     * 当前只支持 HTTP / HTTPS。
      */
     if (
         !url.startsWith(
@@ -920,7 +1010,7 @@ private fun downloadFile(
     try {
 
         /*
-         * 自动识别文件名。
+         * 自动生成文件名。
          */
         val fileName =
             URLUtil.guessFileName(
@@ -938,8 +1028,7 @@ private fun downloadFile(
                 )
 
         /*
-         * 创建系统 DownloadManager
-         * 下载任务。
+         * 系统 DownloadManager。
          */
         val request =
             DownloadManager.Request(
@@ -976,7 +1065,7 @@ private fun downloadFile(
                 )
 
                 /*
-                 * 保留网页 User-Agent。
+                 * 保留 User-Agent。
                  */
                 userAgent?.let {
 
@@ -987,10 +1076,7 @@ private fun downloadFile(
                 }
 
                 /*
-                 * 保留 Cookie。
-                 *
-                 * 登录后的文件下载
-                 * 通常需要 Cookie。
+                 * 保留当前网页 Cookie。
                  */
                 val cookies =
                     CookieManager
@@ -1011,7 +1097,7 @@ private fun downloadFile(
             }
 
         /*
-         * 交给系统下载器。
+         * 开始下载。
          */
         val manager =
             context.getSystemService(
