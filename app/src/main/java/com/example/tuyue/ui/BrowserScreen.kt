@@ -34,52 +34,28 @@ private const val SHORT_PAGE_FIX_SCRIPT = """
     try {
         const html = document.documentElement;
         const body = document.body;
-
         if (!html || !body) return;
 
-        const viewportHeight = window.innerHeight;
-
-        const bodyHeight =
-            body.getBoundingClientRect().height;
-
         /*
-         * 只处理“网页本身比视口矮”的情况。
-         * 长网页完全不碰。
+         * 注入自适应 CSS，确保 html、body 能够自动撑满视口高度，
+         * 杜绝全屏展开时视口增大而网页内容高度未更新导致的底部留白。
          */
-        if (bodyHeight + 1 < viewportHeight) {
-
-            html.style.minHeight = '100%';
-            body.style.minHeight = '100vh';
-
-            /*
-             * 常见 SPA 根节点。
-             * 只有它本身接近整个 body 高度时才补高，
-             * 避免随便修改网页内部组件。
-             */
-            const candidates = [
-                document.getElementById('app'),
-                document.getElementById('root'),
-                document.getElementById('__next')
-            ].filter(Boolean);
-
-            candidates.forEach(function (element) {
-
-                const rect =
-                    element.getBoundingClientRect();
-
-                if (
-                    rect.top <= 1 &&
-                    rect.height <= viewportHeight
-                ) {
-                    element.style.minHeight = '100vh';
+        if (!document.getElementById('tuyue-viewport-fix')) {
+            const style = document.createElement('style');
+            style.id = 'tuyue-viewport-fix';
+            style.textContent = `
+                html {
+                    min-height: 100% !important;
+                    height: 100% !important;
                 }
-            });
+                body {
+                    min-height: 100% !important;
+                }
+            `;
+            (document.head || html).appendChild(style);
         }
 
-        window.dispatchEvent(
-            new Event('resize')
-        );
-
+        window.dispatchEvent(new Event('resize'));
     } catch (e) {
     }
 })();
