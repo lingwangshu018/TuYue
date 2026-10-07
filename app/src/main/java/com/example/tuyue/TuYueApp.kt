@@ -171,21 +171,13 @@ fun TuYueApp(
         /*
          * 页面内容区域
          *
-         * 全屏时主动消费底部 insets，
-         * 防止系统把导航栏高度留成白边。
+         * 全屏时不加任何底部 padding，让 WebView 真正铺满到底部。
          */
         Box(
             modifier =
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .then(
-                        if (isFullscreen) {
-                            Modifier.navigationBarsPadding()
-                        } else {
-                            Modifier
-                        }
-                    )
         ) {
 
             when (
